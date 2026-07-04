@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRIDSAFE // HK 平安卡 EXAM HUD</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+HK:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base:          #0B0F14; /* Near-black site-at-night base */
+            --dark-surface:     #121820; /* High-density concrete composite surface */
+            --dark-surface-2:   #171F2A; /* Deep layout nesting surface */
+            --safety-yellow:    #F5C518; /* Real hazard-tape safety yellow */
+            --hud-cyan:         #00E5FF; /* HUD cyan for interactive focus/links */
+            --alert-magenta:    #FF2E88; /* Magenta reserved for critical data alerts/scores */
+            --concrete-grey:    #C9CDD3; /* High-readability bilingual text grey */
+            --line-border:      rgba(0, 229, 255, 0.12);
+            --glow-cyan:        rgba(0, 229, 255, 0.25);
+        }
+
+        /* Reset & Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--concrete-grey);
+            font-family: 'Noto Sans HK', sans-serif;
+            min-height: 100vh;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+            
+            /* Blueprint Grid Background */
+            background-image: 
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Orchestrated HUD Scan Line */
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(180deg, rgba(0, 229, 255, 0.4) 0%, transparent 100%);
+            box-shadow: 0 0 10px var(--hud-cyan);
+            animation: scanLine 6s linear infinite;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        @keyframes scanLine {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        /* Responsive Layout Grid */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1.25fr 1fr;
+            gap: 24px;
+            width: 100%;
+            max-width: 1200px;
+            z-index: 10;
+        }
+
+        /* Structural Cards */
+        .panel {
+            background-color: var(--dark-surface);
+            border: 1px solid var(--line-border);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 680px;
+            overflow: hidden;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Tech HUD Header Style */
+        .panel-header {
+            padding: 16px 20px;
+            background: rgba(7, 11, 20, 0.7);
+            border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Hazard Tape Functional Divider */
+        .hazard-divider {
+            height: 12px;
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--safety-yellow),
+                var(--safety-yellow) 12px,
+                #000000 12px,
+                #000000 24px
+            );
+            width: 100%;
+            border-top: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            flex-shrink: 0;
+        }
+
+        /* Typography Override */
+        h1, h2, h3, .industrial-text {
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+        }
+
+        .data-stream {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--hud-cyan);
+            letter-spacing: 0.5px;
+        }
+
+        /* --- QUIZ MODULE VIEWPORT (Welding-Visor Concept) --- */
+        .quiz-viewport {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .question-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .q-number {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 46, 136, 0.08);
+            color: var(--alert-magenta);
+            padding: 4px 10px;
+            border: 1px solid rgba(255, 46, 136, 0.25);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #fff;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+
+        .question-text span {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--concrete-grey);
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        .options-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-grow: 1;
+        }
+
+        .hud-btn {
+            background: var(--dark-surface-2);
+            border: 1px solid rgba(201, 205, 211, 0.15);
+            color: var(--concrete-grey);
+            padding: 14px 18px;
+            text-align: left;
+            font-family: 'Noto Sans HK', sans-serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        /* HUD Interactive Hover Glows */
+        .hud-btn:hover:not([disabled]) {
+            border-color: var(--hud-cyan);
+            background: rgba(0, 229, 255, 0.04);
+            color: #fff;
+            box-shadow: 0 0 14px var(--glow-cyan);
+        }
+
+        .hud-btn.correct {
+            border-color: var(--hud-cyan) !important;
+            background: rgba(0, 229, 255, 0.12) !important;
+            color: #fff !important;
+            font-weight: 700;
+            box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+        }
+
+        .hud-btn.wrong {
+            border-color: var(--alert-magenta) !important;
+            background: rgba(255, 46, 136, 0.12) !important;
+            color: #fff !important;
+        }
+
+        /* Readout/Explanation Frame */
+        .visor-readout {
+            background: rgba(0, 0, 0, 0.45);
+            border-left: 3px solid var(--safety-yellow);
+            padding: 14px 18px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin-top: 20px;
+            color: var(--safety-yellow);
+        }
+
+        .quiz-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(201, 205, 211, 0.08);
+        }
+
+        .action-btn {
+            background: var(--safety-yellow);
+            color: #0B0F14;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            text-transform: uppercase;
+            border: none;
+            padding: 12px 24px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: transform 0.1s ease, filter 0.2s ease;
+        }
+
+        .action-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .action-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* --- CHAT MODULE TERMINAL --- */
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background: rgba(7, 11, 20, 0.4);
+        }
+
+        .msg-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            border-radius: 2px;
+        }
+
+        .msg-bubble.system {
+            background: rgba(0, 229, 255, 0.04);
+            border: 1px solid rgba(0, 229, 255, 0.18);
+            color: var(--concrete-grey);
+            align-self: flex-start;
+        }
+
+        .msg-bubble.user {
+            background: rgba(255, 46, 136, 0.04);
+            border: 1px solid rgba(255, 46, 136, 0.25);
+            color: #fff;
+            align-self: flex-end;
+        }
+
+        .chat-input-row {
+            display: flex;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 16px;
+            border-top: 1px solid rgba(201, 205, 211, 0.08);
+            gap: 12px;
+        }
+
+        .terminal-input {
+            flex-grow: 1;
+            background: var(--dark-surface-2);
+            border: 1px solid rgba(201, 205, 211, 0.2);
+            color: #fff;
+            padding: 12px 16px;
+            font-family: inherit;
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .terminal-input:focus {
+            border-color: var(--hud-cyan);
+            box-shadow: 0 0 8px rgba(0, 229, 255, 0.15);
+        }
+
+        .terminal-send {
+            background: transparent;
+            border: 1px solid var(--hud-cyan);
+            color: var(--hud-cyan);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 0 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .terminal-send:hover {
+            background: var(--hud-cyan);
+            color: var(--bg-base);
+            box-shadow: 0 0 12px var(--hud-cyan);
+        }
+
+        .hidden { display: none !important; }
+
+        /* Media Responsive Queries */
+        @media (max-width: 920px) {
+            body { padding: 12px; }
+            .grid-container { grid-template-columns: 1fr; gap: 20px; }
+            .panel { height: 620px; }
+        }
+
+        /* Reduced Motion Compliance */
+        @media (prefers-reduced-motion: reduce) {
+            body::after { animation: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-container">
+        
+        <div class="panel">
+            <div class="panel-header">
+                <h2 style="color: var(--safety-yellow);">[ 建造業安全考試中心 // CONSTRUCTION SAFETY EXAM CENTER ]</h2>
+                <div id="progress-indicator" class="data-stream">第 01 / 30 題 // QUESTION 01 OF 30</div>
+            </div>
+            
+            <div class="hazard-divider"></div>
+
+            <div class="quiz-viewport">
+                <div>
+                    <div class="question-meta">
+                        <div id="q-code" class="q-number">核心安全項目 // GENERAL SAFETY QUESTION</div>
+                        <div id="score-live" class="data-stream" style="color: var(--alert-magenta);">答對題數 // CORRECT: 0/30</div>
+                    </div>
+                    <div id="question-payload" class="question-text">
+                        Loading critical vector information...
+                    </div>
+                </div>
+
+                <div id="options-stack" class="options-stack"></div>
+
+                <div id="readout-frame" class="visor-readout hidden">
+                    <span class="data-stream" style="display:block; margin-bottom:4px;">[VISOR_ANALYSIS]:</span>
+                    <p id="readout-text"></p>
+                </div>
+
+                <div class="quiz-controls">
+                    <div class="data-stream" style="color:rgba(201,205,211,0.4);">STATUS: WAITING_FOR_INPUT</div>
+                    <button id="next-payload-btn" class="action-btn hidden">NEXT SYSTEM LAYER →</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2 style="color: var(--hud-cyan);">[ TELEMETRY_AI: TUTOR_BOT ]</h2>
+                <div class="data-stream">LINK: ACTIVE</div>
+            </div>
+            
+            <div class="hazard-divider"></div>
+
+            <div class="chat-messages" id="terminal-stream">
+                <div class="msg-bubble system">
+                    <strong>[TUTOR]</strong>: Ready for bilingual query processing. Input question regarding HK Labour Dept rules or site safety protocols below.
+                </div>
+            </div>
+
+            <div class="chat-input-row">
+                <input type="text" id="terminal-input" class="terminal-input" placeholder="SYS_PROMPT // Enter string query..." autocomplete="off">
+                <button id="terminal-submit" class="terminal-send">EXEC</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            
+            const examDatabase = [
+                {
+                    q: "1. 根據香港勞工處規定，俗稱「平安卡」的建築工程安全訓練證明書有效期為多久？<span>What is the validity period of the Mandatory Basic Safety Training Certificate (Green Card) in HK?</span>",
+                    opts: ["1 年 (1 Year)", "2 年 (2 Years)", "3 年 (3 Years)", "5 年 (5 Years)"],
+                    ans: 2,
+                    info: "【一般安全 / GENERAL】「平安卡」安全訓練證明書有效期為 3 年。持有人須在到期前修讀重溫課程。Valid for 3 years. Mandatory revalidation course required prior to expiry."
+                },
+                {
+                    q: "2. 使用直梯作為高處工作進出通道時，其底部與高度應保持怎樣的擺放斜度比例？<span>What is the correct slope ratio of a straight ladder used for access?</span>",
+                    opts: ["1:2 斜度 (1:2 Slope)", "1:3 斜度 (1:3 Slope)", "1:4 斜度 (1:4 Slope)", "1:5 斜度 (1:5 Slope)"],
+                    ans: 2,
+                    info: "【高處工作 / WORKING AT HEIGHT】使用直梯進出時，梯子底部與垂直高度須保持 1:4 比例（約 75 度角）。The ladder base should be placed 1 unit away from the wall for every 4 units of vertical height (approx. 75°)."
+                },
+                {
+                    q: "3. 根據香港法規，哪一種滅火筒最適宜用於撲滅由電器故障引致的火警？<span>Which type of fire extinguisher is best suited for electrical fires?</span>",
+                    opts: ["水式 (Water)", "泡沫式 (Foam)", "二氧化碳氣體式 (CO2)", "以上皆非 (None of the above)"],
+                    ans: 2,
+                    info: "【防火安全 / FIRE SAFETY】二氧化碳氣體式 (CO2) 滅火筒最適宜用於撲滅電器火警，因不導電、不留殘留物。CO2 extinguishers are non-conductive and leave no dangerous residues."
+                },
+                {
+                    q: "4. 所有棚架在首次使用前，或緊接每次使用前的多少天內，必須由合資格人士檢查並簽發「表格五」(Form 5)？<span>Scaffolding must be inspected via Form 5 by a competent person within how many days prior to use?</span>",
+                    opts: ["7 天內 (7 Days)", "14 天內 (14 Days)", "30 天內 (30 Days)", "3 個月內 (3 Months)"],
+                    ans: 1,
+                    info: "【高處工作 / WORKING AT HEIGHT】棚架及工作平台須在首次使用前、以及緊接每次使用前的 14 天內，由合資格人士檢查及簽發表格五。Must be inspected within 14 days immediately preceding its first use and periodically."
+                },
+                {
+                    q: "5. 勞工處制定的「工作暑熱警告」共分為哪三級？<span>What are the three tiers of the 'Heat Stress at Work Warning' set by the Labour Department?</span>",
+                    opts: ["藍、黃、紅 (Blue, Yellow, Red)", "黃、紅、黑 (Yellow, Red, Black)", "綠、黃、紅 (Green, Yellow, Red)", "第一、二、三級 (Tier 1, 2, 3)"],
+                    ans: 1,
+                    info: "【健康事項 / OCCUPATIONAL HEALTH】勞工處工作暑熱警告分為黃色、紅色及黑色三級。The system is categorized into Amber, Red, and Black alerts to protect outdoor operators."
+                },
+                {
+                    q: "6. 如果地盤內發生嚴重意外導致工友受傷喪失工作能力超過3天，僱主必須在多少天內向勞工處填報？<span>If an injury causes incapacity for >3 days, within how many days must the employer report it to the Labour Dept?</span>",
+                    opts: ["3 天內 (3 Days)", "7 天內 (7 Days)", "14 天內 (14 Days)", "30 天內 (30 Days)"],
+                    ans: 2,
+                    info: "【一般法規 / REGULATIONS】若僱員因工傷亡或喪失工作能力超過3天，僱主必須在 14 天內向勞工處遞交意外報告（表格二）。Form 2 must be processed within 14 days of the incident."
+                },
+                {
+                    q: "7. 在沒有安裝防護欄杆的高處環境工作時，工人配戴全身式安全帶必須扣在何處？<span>Where must a full-body harness be securely anchored when working at height without guardrails?</span>",
+                    opts: ["普通竹棚管上 (Bamboo scaffold member)", "旁邊流動的鋼筋堆上 (Loose rebar stacks)", "獨立救生繩或確認結構穩固的錨固點上 (Independent lifeline or anchor point)", "放在地上的手推車上 (On a wheelbarrow)"],
+                    ans: 2,
+                    info: "【個人防護 / PPE】防墮防護繩必須扣在獨立救生繩 (Independent Lifeline) 或結構上確認穩固的防墮錨固點上。Must be attached exclusively to reliable structurally certified anchorages."
+                },
+                {
+                    q: "8. 進入密閉空間（例如沙井、地下管道）工作前，必須由哪一類法定人員進行危險評估？<span>Who must conduct a comprehensive risk assessment before entry into a confined space?</span>",
+                    opts: ["一般地盤工人 (General worker)", "合資格人士 (Competent Person)", "註冊結構工程師 (Registered Structural Engineer)", "保安人員 (Security staff)"],
+                    ans: 1,
+                    info: "【密閉空間 / CONFINED SPACE】進入密閉空間前，必須由合資格人士 (Competent Person) 進行風險評估。A certified competent person must assess air quality and identify operational hazards."
+                },
+                {
+                    q: "9. 地盤進行挖掘工程（泥坑），在深度達到或超過多少米時，必須裝設牢固的支撐支架以防倒塌？<span>Shoring support is mandatory for excavation works when depth reaches or exceeds how many meters?</span>",
+                    opts: ["0.5 米 (0.5m)", "1.2 米 (1.2m)", "2.0 米 (2.0m)", "3.0 米 (3.0m)"],
+                    ans: 1,
+                    info: "【挖掘安全 / EXCAVATION】凡挖掘深度達 1.2 米或以上，必須採取防止泥土坍塌的安全支撐措施（如擋土板）。Shoring installations are strict legal mandates for trenches deeper than 1.2 meters."
+                },
+                {
+                    q: "10. 提舉地面重物時，為了保護腰部免受拉傷，下列哪項是正確的姿勢？<span>What is the correct ergonomic body posture for lifting heavy loads manually from the ground?</span>",
+                    opts: ["直腿彎腰用腰力抬起 (Straight legs, bend back)", "屈膝蹲下，保持背部挺直用腿力 (Bend knees, straight back, use leg strength)", "單手猛烈拉起 (Violent one-hand pull)", "身體遠離重物起吊 (Keep distance from load)"],
+                    ans: 1,
+                    info: "【健康事項 / ERGONOMICS】搬運重物時應屈膝蹲下，運用大腿肌肉發力，背部挺直。Bend your knees and let your leg muscles do the lifting work, protecting the spine."
+                },
+                {
+                    q: "11. 地盤起重機（天秤）使用的鋼絲繩，應在何時由合資格人士進行測試及徹底檢驗並發出「表格一」(Form 1)？<span>When should the wire ropes of cranes undergo complete thorough inspections via Form 1?</span>",
+                    opts: ["每 14 天內 (Every 14 days)", "每 6 個月內 (Every 6 months)", "每 12 個月內 (Every 12 months)", "每 2 年內 (Every 2 years)"],
+                    ans: 2,
+                    info: "【起重機械 / LIFTING】起重機械（如天秤）必須每隔不超過 12 個月由合資格檢驗員徹底檢驗，並簽發表格一。Lifting appliances must undergo thorough inspection annually via Form 1."
+                },
+                {
+                    q: "12. 吊索、鏈條及卸扣（等吊具），依法例必須每隔多少個月由合資格檢驗員進行徹底檢驗並發出「表格四」(Form 4)？<span>Lifting gear must be evaluated via Form 4 within how many months interval?</span>",
+                    opts: ["3 個月 (3 months)", "6 個月 (6 months)", "12 個月 (12 months)", "24 個月 (24 months)"],
+                    ans: 1,
+                    info: "【起重吊具 / LIFTING GEAR】吊索及吊具等輕便起重設備，依法必須每 6 個月進行一次彻底檢驗並發出表格四。Lifting gear must be evaluated every 6 months using Form 4 documentation."
+                },
+                {
+                    q: "13. 高處工作平台上，防止物件跌落的「托腳板」（踢腳板/Toe-board）其高度不得少於多少毫米？<span>What is the minimum required statutory height of a platform toe-board?</span>",
+                    opts: ["50 毫米 (50mm)", "100 毫米 (100mm)", "150 毫米 (150mm)", "200 毫米 (200mm)"],
+                    ans: 3,
+                    info: "【高處工作 / TOEBARD】工作平台邊緣必須安裝防護托腳板，其高度必須至少有 200 毫米。Toe-boards must be at least 200mm high to prevent material and tool falls."
+                },
+                {
+                    q: "14. 密閉空間內的危險氣體測試（如氧氣含量、有毒氣體），檢測必須在工人進入前多久內進行？<span>Atmospheric monitoring within confined spaces must occur within what frame prior to entry?</span>",
+                    opts: ["緊接工人進入之前 (Immediately before entry)", "24 小時之前 (24 hours prior)", "3 天之前 (3 days prior)", "一星期之前 (1 week prior)"],
+                    ans: 0,
+                    info: "【密閉空間 / AIR QUALITY】大氣測試應由合資格人士在緊接工作開始前或工人進入前進行。Atmospheric testing must occur immediately prior to entry to avoid environmental shift risks."
+                },
+                {
+                    q: "15. 地盤臨時配電箱內必須裝設哪一種安全裝置，以防止工人因觸電而引致傷亡？<span>Which security breaker configuration protects construction operators from direct live short electrocution?</span>",
+                    opts: ["保險絲 (Fuse)", "漏電斷路器 (RCD/ELCB)", "變壓器 (Transformer)", "隔離開關 (Isolator)"],
+                    ans: 1,
+                    info: "【電力安全 / ELECTRICAL】地盤臨時用電必須安裝漏電斷路器 (RCD)，能在發生漏電微秒間切斷電源。Residual Current Devices (RCDs) are critical for breaking microsecond short faults."
+                },
+                {
+                    q: "16. 根據法例，地盤僱員必須妥善使用和照料由僱主提供的個人防護裝備(PPE)，否則最高可被處罰款多少？<span>What is the maximum worker fine for failing to manage or wear standard safety gear?</span>",
+                    opts: ["$2,000", "$10,000", "$50,000", "$100,000"],
+                    ans: 1,
+                    info: "【一般法規 / PENALTIES】工人若故意不配戴或濫用安全裝備，一經定罪最高可被罰款港幣 10,000 元。Employees failing to maintain or use required PPE face fines up to HKD 10,000."
+                },
+                {
+                    q: "17. 如果工地內要進行可能產生大量易燃氣體的「熱熔工作」（Hot work），應優先採取什麼安全措施？<span>What primary safety layout overrides dynamic fire vulnerabilities during hot works?</span>",
+                    opts: ["加大抽風和實施動火作業許可證制度", "戴上雙層外科口罩", "多潑水到地上", "關閉所有滅火器"],
+                    ans: 0,
+                    info: "【防火安全 / HOT WORK】動火作業必须嚴格執行作業許可證制度（Hot Work Permit），並確保現場通風良好、移除易燃物。Utilize hot work entry permits and high-capacity extraction vents."
+                },
+                {
+                    q: "18. 在噪音環境（高於 85 分貝）內工作的工人，僱主應提供什麼防護裝備？<span>What PPE unit must employers provide when decibel volumes surge above 85 dB?</span>",
+                    opts: ["防塵口罩 (Dust mask)", "護目鏡 (Safety goggles)", "護耳器（耳塞或耳罩）(Hearing protectors)", "絕緣手套 (Insulated gloves)"],
+                    ans: 2,
+                    info: "【健康事項 / NOISE CONTROL】當工作環境噪音水平達到或超過 85 分貝(A)時，僱主應向受影響員工提供合格的護耳器。Hearing protectors must be equipped at locations surpassing 85 dB(A)."
+                },
+                {
+                    q: "19. 氣體焊接及剪割作業（俗稱燒焊）中使用的氣樽，必須裝設甚麼裝置以防止火焰回流進入氣樽發生爆炸？<span>What valve installation stops dynamic combustion lines from blowing back into gas cylinders?</span>",
+                    opts: ["減壓閥 (Regulator)", "回火防止器 (Flashback Arrestor)", "壓力錶 (Pressure gauge)", "針閥 (Needle valve)"],
+                    ans: 1,
+                    info: "【防火安全 / WELDING】氧氣及乙炔氣樽的管線上必須安裝「回火防止器」，防止火焰逆向回流。Flashback arrestors are highly crucial safety components on industrial gas cylinders."
+                },
+                {
+                    q: "20. 地盤臨時搭建的臨時懸掛式工作平台（如俗稱吊船），必須在每隔不超過多久由合資格檢驗員徹底檢驗並簽發「表格六」(Form 6)？<span>Suspended access platforms require rigorous recertification via Form 6 every how many months?</span>",
+                    opts: ["7 天 (7 days)", "14 天 (14 days)", "6 個月 (6 months)", "12 個月 (12 months)"],
+                    ans: 2,
+                    info: "【高處工作 / SUSPENDED PLATFORM】吊船（懸掛式工作平台）屬於起重機械與平台的結合，必須每隔不超過 6 個月由合資格檢驗員徹底檢驗並發出表格六。Thorough statutory exam must run every 6 months via Form 6."
+                },
+                {
+                    q: "21. 根據法例，挖掘工程中使用的擋土板和支撐結構，合資格人士須每隔不超過多少天進行徹底檢查並簽發「表格四」(Form 4)？<span>Excavation protective shoring demands formal review via Form 4 within how many days?</span>",
+                    opts: ["7 天內 (7 days)", "14 天內 (14 days)", "30 天內 (30 days)", "6 個月內 (6 months)"],
+                    ans: 0,
+                    info: "【挖掘安全 / EXCAVATION】挖掘工程中用作預防泥土坍塌的擋土支撐結構，合資格人士必須每隔不超過 7 天進行結構檢查及簽發表格四。Shoring structures require routine Form 4 certifications every 7 days."
+                },
+                {
+                    q: "22. 在操作地盤木工用的圓盤鋸（圓鋸機）時，哪項安全裝置是用於防止木材在鋸切後夾緊鋸片並向後反彈？<span>Which safety device stops lumber blocks from pinning down a moving saw blade and kicking back?</span>",
+                    opts: ["緊急停機掣 (E-stop)", "分木刀 (Riving Knife)", "推木條 (Push stick)", "防護罩 (Blade guard)"],
+                    ans: 1,
+                    info: "【機械安全 / SAWMILL】圓盤鋸必須安裝分木刀 (Riving Knife)，用於鋸位後方分開木材，防止夾鋸引致嚴重的木材反彈意外。The riving knife spreads split wood preventing blade clamping kickbacks."
+                },
+                {
+                    q: "23. 任何起重機械（例如履帶吊機），在首次投入使用前或經歷重大修改後，必須由合資格檢驗員進行甚麼法規程序？<span>What compliance mandate protects dynamic cranes prior to launch or after heavy alterations?</span>",
+                    opts: ["只作肉眼檢查 (Visual inspection only)", "測試及徹底檢驗並發出表格二 (Form 2 test)", "簽發表格五 (Form 5 issue)", "直接使用 (Immediate operation)"],
+                    ans: 1,
+                    info: "【起重機械 / CRANES】起重機械首次使用、重組或重大修理後，必須進行荷重測試及徹底檢驗，並簽發表格二（Form 2）。Load testing and verification requires execution under Form 2."
+                },
+                {
+                    q: "24. 吊索、吊鏈等吊具在首次投入使用前，必須由合資格檢驗員進行測試及彻底檢驗，並簽發哪一份法定證明書？<span>Which statutory certificate validates rigging chains and hooks before operational launch?</span>",
+                    opts: ["表格三 (Form 3)", "表格四 (Form 4)", "表格五 (Form 5)", "表格一 (Form 1)"],
+                    ans: 0,
+                    info: "【起重吊具 / SLINGS】起重吊具（吊索、卸扣等）在首次投入使用前，必須進行荷重測試與彻底檢驗，並簽發表格三（Form 3）。Proof load tests must be stamped on Form 3."
+                },
+                {
+                    q: "25. 進行化學品噴塗作業或處理有毒粉塵時，普通外科口罩並無防護效果，工人應配戴甚麼類型的防護裝備？<span>What respiratory protection gear must shield staff when handling toxic chemical vapors?</span>",
+                    opts: ["普通棉紗口罩 (Cotton mask)", "合格的防毒面具或濾毒呼吸器 (Respirator)", "反光背心 (Hi-vis vest)", "護目鏡 (Safety glasses)"],
+                    ans: 1,
+                    info: "【個人防護 / HAZMAT】處理有害化學氣體或高濃度粉塵，必須根據化學品安全技術說明書(SDS)選配相應濾毒罐的防毒面具。Industrial particulate respirators or gas masks are mandatory here."
+                },
+                {
+                    q: "26. 立法會通過《職業安全及職業健康立法（修訂）條例》，針對僱主「蓄意違法」引致嚴重傷亡的最高罰款金額已提高至多少？<span>What is the updated maximum financial liability ceiling for corporate willful negligence under HK law?</span>",
+                    opts: ["港幣 50 萬元 (HKD 500k)", "港幣 100 萬元 (HKD 1M)", "港幣 500 萬元 (HKD 5M)", "港幣 1,000 萬元 (HKD 10M)"],
+                    ans: 3,
+                    info: "【法律法規 / LAWS】最新職安健條例修訂中，可改以「公訴程序」起訴極惡劣的違法僱主，最高罰款提升至港幣 1,000 萬元及監禁 2 年。Maximum penalty for severe willful neglect hits HKD 10,000,000."
+                },
+                {
+                    q: "27. 在地盤內搬運尖銳鋼筋或清理帶釘木板時，普通帆布手套極易被刺穿，工人應配戴哪種防護手套？<span>What heavy hand protection shields workers from jagged rebar stubs and exposed wood spikes?</span>",
+                    opts: ["乳膠防化手套 (Latex chemical gloves)", "防刺穿或耐磨皮革工作手套 (Puncture-resistant leather gloves)", "高壓絕緣手套 (Insulated high-volt gloves)", "普通保暖手套 (Thermal gloves)"],
+                    ans: 1,
+                    info: "【個人防護 / HANDLING】針對尖銳物料與粗糙表面的搬運，應配戴防刺穿、耐磨損的皮革或特製安全手套。Heavy-duty puncture-resistant work gloves preserve hands from construction spikes."
+                },
+                {
+                    q: "28. 起重機進行吊運作業時，吊鉤必須裝有甚麼裝置，以防止吊索或卸扣意外滑脫？<span>What essential lock latch keeps dynamic lifting cables from skipping off a crane hook?</span>",
+                    opts: ["保險夾 / 防滑舌片 (Safety Catch)", "計重器 (Load cells)", "旋轉環 (Swivel connection)", "鋼絲卡扣 (Wire clips)"],
+                    ans: 0,
+                    info: "【起重吊具 / RIGGING】所有吊鉤均必須安裝有效的安全夾（防滑舌片），確保起吊過程中吊索及物料不會脫鉤。Safety catches are absolute baseline legal equipment for dynamic hoisting rigs."
+                },
+                {
+                    q: "29. 氣體樽（如氧氣樽、乙炔樽）在工地的日常存放與使用中，應保持甚麼狀態以策安全？<span>How must high-pressure industrial cylinders remain locked and stacked inside active zones?</span>",
+                    opts: ["隨意橫放在泥地上 (Laying unsecured on mud)", "直立放置於專用氣樽推車內，並以鏈條穩固鏈緊 (Upright in specialized chained carts)", "倒轉堆疊放置 (Upside down stacks)", "暴曬在太陽底下 (Direct solar exposure)"],
+                    ans: 1,
+                    info: "【防火安全 / CYLINDERS】氣樽必須直立儲存及使用，並用鏈條牢固固定，嚴禁橫放滾動。All high-pressure gas cylinders must reside secure, upright, and strapped securely."
+                },
+                {
+                    q: "30. 地盤內使用的移動式腳手架（俗稱工作工作台、鋁架），當有人在架上工作或站立時，是否可以推動腳手架？<span>Is shifting or pushing an active mobile structural staging frame legal while a worker is on top?</span>",
+                    opts: ["可以，只要推慢一點 (Yes, if moved slowly)", "可以，若工人抓緊欄杆 (Yes, if holding tightly)", "絕對禁止！任何人停留在架上時嚴禁推動 (Strictly prohibited while occupied)", "看情況而定 (Depends on conditions)"],
+                    ans: 2,
+                    info: "【高處工作 / MOBILE TOWERS】移動式塔架在被推動時，上面絕對不准有人或未固定的工具物件。Never displace structural mobile scaffold rigs while operators stand on top."
+                }
+            ];
+
+            let activeQuestionIdx = 0;
+            let currentScore = 0;
+
+            const progressIndicator = document.getElementById("progress-indicator");
+            const scoreLive = document.getElementById("score-live");
+            const questionPayload = document.getElementById("question-payload");
+            const optionsStack = document.getElementById("options-stack");
+            const readoutFrame = document.getElementById("readout-frame");
+            const readoutText = document.getElementById("readout-text");
+            const nextPayloadBtn = document.getElementById("next-payload-btn");
+
+            function mountQuestion() {
+                readoutFrame.classList.add("hidden");
+                nextPayloadBtn.classList.add("hidden");
+                optionsStack.innerHTML = "";
+                
+                // Updates the question number to your chosen design configuration
+                progressIndicator.innerText = `第 ${(activeQuestionIdx + 1).toString().padStart(2, '0')} / 30 題 // QUESTION ${(activeQuestionIdx + 1).toString().padStart(2, '0')} OF 30`;
+                
+                let currentItem = examDatabase[activeQuestionIdx];
+                questionPayload.innerHTML = currentItem.q;
+
+                currentItem.opts.forEach((optText, index) => {
+                    const btn = document.createElement("button");
+                    btn.innerText = optText;
+                    btn.classList.add("hud-btn");
+                    btn.onclick = function() { processSelection(index, btn); };
+                    optionsStack.appendChild(btn);
+                });
+            }
+
+            function processSelection(indexSelected, targetedBtn) {
+                let currentItem = examDatabase[activeQuestionIdx];
+                const allButtons = optionsStack.querySelectorAll(".hud-btn");
+                allButtons.forEach(b => b.disabled = true);
+
+                if (indexSelected === currentItem.ans) {
+                    targetedBtn.classList.add("correct");
+                    currentScore++;
+                    scoreLive.innerText = `答對題數 // CORRECT: ${currentScore}/30`;
+                } else {
+                    targetedBtn.classList.add("wrong");
+                    allButtons[currentItem.ans].classList.add("correct");
+                }
+
+                readoutText.innerText = currentItem.info;
+                readoutFrame.classList.remove("hidden");
+                nextPayloadBtn.classList.remove("hidden");
+            }
+
+            nextPayloadBtn.onclick = function() {
+                activeQuestionIdx++;
+                if (activeQuestionIdx < examDatabase.length) {
+                    mountQuestion();
+                } else {
+                    progressIndicator.innerText = "COMPLETED";
+                    questionPayload.innerHTML = `EXAM VECTOR COMPLETED.<br>FINAL SCORE READOUT: <span style="color:var(--safety-yellow); font-size: 1.5rem;">答對題數 // CORRECT: ${currentScore} / 30</span>`;
+                    optionsStack.innerHTML = "";
+                    readoutFrame.classList.add("hidden");
+                    nextPayloadBtn.classList.add("hidden");
+                }
+            };
+
+            mountQuestion();
+
+            // --- TERMINAL ASYNC STREAM ---
+            const terminalStream = document.getElementById("terminal-stream");
+            const terminalInput = document.getElementById("terminal-input");
+            const terminalSubmit = document.getElementById("terminal-submit");
+
+            async function dispatchStreamQuery() {
+                const queryText = terminalInput.value.trim();
+                if (queryText === "") return;
+
+                appendTerminalMessage(queryText, "user");
+                terminalInput.value = "";
+
+                const receivedTelemetry = await fetchAITelemetry(queryText);
+                appendTerminalMessage(receivedTelemetry, "system");
+            }
+
+            function appendTerminalMessage(text, identity) {
+                const block = document.createElement("div");
+                block.classList.add("msg-bubble", identity);
+                block.innerHTML = identity === "system" ? `<strong>[TUTOR]</strong>: ${text}` : `<strong>[USER]</strong>: ${text}`;
+                terminalStream.appendChild(block);
+                terminalStream.scrollTop = terminalStream.scrollHeight;
+            }
+
+            async function fetchAITelemetry(input) {
+                const sanitized = input.toLowerCase();
+                
+                if (sanitized.includes("green card") || sanitized.includes("平安卡")) {
+                    return "根據香港勞工處規定，任何進入建築地盤的人員必須持有有效的「平安卡」（安全訓練證明書）。其有效期為 3 年，到期前必須進行重溫培訓課程。(Bilingual Alert: Validity is 3 Years under LD regulation).";
+                }
+                if (sanitized.includes("form 5") || sanitized.includes("表格五")) {
+                    return "根據香港高處工作安全條例，工作用的棚架或腳手架平台在首次使用前、或每隔不超過 14 天內，必須由合資格人士進行結構安全檢查並填寫簽發「表格五」(Form 5).";
+                }
+
+                // 🔴 INSERT LIVE OPENAI API EXAM KEY HERE FOR HUB INTEGRATION 🔴
+                const API_KEY = "YOUR_NEW_API_KEY_HERE"; 
+                const API_URL = "https://api.openai.com/v1/chat/completions";
+
+                try {
+                    const response = await fetch(API_URL, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: "gpt-4o-mini",
+                            messages: [
+                                { role: "system", content: "You are an expert HK construction safety tutor embedded in a high-tech HUD app interface. Provide precise responses in Traditional Chinese and English keywords where applicable." },
+                                { role: "user", content: input }
+                            ]
+                        })
+                    });
+
+                    const data = await response.json();
+                    return data.choices[0].message.content;
+                } catch (err) {
+                    console.error("Telemetry failure:", err);
+                    return "CRITICAL ENGINE OVERLOAD: Unable to complete live API telemetry check. System defaults to stand-by mode.";
+                }
+            }
+
+            terminalSubmit.onclick = dispatchStreamQuery;
+            terminalInput.onkeypress = function(e) {
+                if (e.key === "Enter") { dispatchStreamQuery(); }
+            };
+        });
+    </script>
+</body>
+</html>
